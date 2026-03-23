@@ -41,15 +41,17 @@ function tokenize(input) {
     if (input[i] === '"' || input[i] === "'") {
       const q = input[i]; let str = "", sc = col; i++; col++;
       while (i < input.length && input[i] !== q) { str += input[i]; i++; col++; }
-      i++; col++;
-      tokens.push({ type: "STRING", value: str, line, col: sc }); continue;
+      i++; col++; 
+      tokens.push({ type: "STRING", value: q + str + q, line, col: sc }); continue;
     }
     if (/[a-zA-Z_]/.test(input[i])) {
       let word = "", sc = col;
       while (i < input.length && /[a-zA-Z0-9_]/.test(input[i])) { word += input[i]; i++; col++; }
       tokens.push({ type: KEYWORDS.has(word) ? "KEYWORD" : "IDENTIFIER", value: word, line, col: sc }); continue;
     }
-    errors.push({ message: `Unexpected character '${input[i]}'`, line, col }); i++; col++;
+    tokens.push({ type: "UNKNOWN", value: input[i], line, col });
+    errors.push({ message: `Unexpected character '${input[i]}'`, line, col }); 
+    i++; col++;
   }
   tokens.push({ type: "EOF", value: null, line, col });
   return { tokens, errors };
@@ -299,7 +301,7 @@ const SAMPLE = `dish_def chicken_adobo {
 }`;
 
 // ─── COLOR MAP ───────────────────────────────────────────────────────────────
-const TC = { KEYWORD: "#f59e0b", IDENTIFIER: "#60a5fa", NUMBER: "#34d399", OPERATOR: "#f472b6", SYMBOL: "#a78bfa", STRING: "#fb923c", COMMENT: "#6b7280" };
+const TC = { KEYWORD: "#f59e0b", IDENTIFIER: "#60a5fa", NUMBER: "#34d399", OPERATOR: "#f472b6", SYMBOL: "#a78bfa", STRING: "#fb923c", COMMENT: "#6b7280", "UNKNOWN": "#ef4444" };
 
 // ─── PARSE TREE RENDERER ─────────────────────────────────────────────────────
 function TreeNode({ label, color, children, last = false }) {
@@ -483,6 +485,14 @@ export default function KitchenLangIDE() {
       dice: "🔪", puree: "🥣", garnish: "🌿" 
     };
 
+    const PAST_TENSE = {
+      mix: "mixed", chop: "chopped", fry: "fried", boil: "boiled", bake: "baked",
+      saute: "sauteed", blanche: "blanched", stir: "stirred", toss: "tossed",
+      blend: "blended", whisk: "whisked", grill: "grilled", simmer: "simmered",
+      knead: "kneaded", mash: "mashed", slice: "sliced", dice: "diced",
+      puree: "pureed", garnish: "garnished"
+    };
+
     for (let i = 0; i < instructions.length; i++) {
         const inst = instructions[i];
         if (inst.type === "DISH_START") {
@@ -508,8 +518,11 @@ export default function KitchenLangIDE() {
         } else if (inst.type === "STEP") {
             const step = inst.step;
             const inputStr = step.args.map(a => `${a}(${state[a]?.status || "raw"})`).join(" + ");
-            state[step.output] = { status: step.technique + "d", from: step.args };
-            pushLog({ action: `${EMOJI[step.technique] || "⚙️"} Step: ${step.technique}(${step.args.join(", ")}) → ${step.output}`, detail: `${inputStr} → ${step.output} [${step.technique}d]` });
+            
+            const pastVerb = PAST_TENSE[step.technique] || (step.technique + "ed");
+            
+            state[step.output] = { status: pastVerb, from: step.args };
+            pushLog({ action: `${EMOJI[step.technique] || "⚙️"} Step: ${step.technique}(${step.args.join(", ")}) → ${step.output}`, detail: `${inputStr} → ${step.output} [${pastVerb}]` });
         } else if (inst.type === "SERVE") {
             const final = state[inst.identifier];
             pushLog({ action: `✅ SERVE: ${inst.identifier} [${final?.status || "ready"}]`, final: true });
