@@ -453,9 +453,13 @@ export default function KitchenLangIDE() {
                  serve: dishNode.serve ? dishNode.serve.identifier : ""
               });
           }
-          if (newDishes.length > 0) setVDishes(newDishes);
-      }
-    } catch (e) { setLiveErrors({ lex: [], parse: [], sem: [{ message: e.message }], warnings: [], all: [{ message: e.message }] }); }
+          if (newDishes.length > 0) {
+                  setVDishes(newDishes);
+              } else if (code.trim() === "") {
+                  setVDishes([]);
+              }
+          }
+        } catch (e) { setLiveErrors({ lex: [], parse: [], sem: [{ message: e.message }], warnings: [], all: [{ message: e.message }] }); }
   }, [code, leftMode]);
 
   // Live Visual to Code Sync
@@ -931,16 +935,6 @@ export default function KitchenLangIDE() {
                       <div style={{ width: 8, height: 8, background: color, borderRadius: "50%" }} />
                       <span style={{ color: "#9ca3af", fontSize: 10, letterSpacing: "0.08em" }}>{type}</span>
                       <span style={{ color: "#374151", fontSize: 10 }}>({result.tokens.filter(t => t.type === type).length})</span>
-                    </div>
-                  ))}
-                </div>
-                {/* Token chips */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-                  {result.tokens.map((tok, i) => (
-                    <div key={i} style={{ background: "#0d1117", border: `1px solid ${(TC[tok.type] || "#374151")}44`, borderRadius: 6, padding: "5px 10px", minWidth: 60 }}>
-                      <div style={{ color: TC[tok.type] || "#9ca3af", fontSize: 9, marginBottom: 2, letterSpacing: "0.1em" }}>{tok.type}</div>
-                      <div style={{ color: "#e2e8f0", fontSize: 12 }}>{String(tok.value)}</div>
-                      <div style={{ color: "#374151", fontSize: 9 }}>L{tok.line}:C{tok.col}</div>
                     </div>
                   ))}
                 </div>
